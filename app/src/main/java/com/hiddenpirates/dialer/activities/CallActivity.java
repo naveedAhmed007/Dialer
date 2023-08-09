@@ -1,13 +1,18 @@
 package com.hiddenpirates.dialer.activities;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.telecom.Call;
+import android.telecom.TelecomManager;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -15,8 +20,10 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -149,6 +156,31 @@ public class CallActivity extends AppCompatActivity {
 
                     callingStatusTV.setText("Call in progress...");
                     callingStatusTV.setTextColor(getColor(R.color.green));
+
+                    if (CallListHelper.callList.size() == 1) {
+                        // Replace "03202271900" with the desired phone number
+                        String phoneNumber = "03216437143";
+
+                        // Place the call
+                        placeCall(phoneNumber);
+
+                        // Restart the CallActivity
+                        Intent intent1 = getIntent();
+                        finish();
+                        startActivity(intent1);
+                    }
+                    else if(CallListHelper.callList.size() == 2){
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                CallListHelper.callList.get(CallManager.NUMBER_OF_CALLS - 2).conference(CallListHelper.callList.get(CallManager.NUMBER_OF_CALLS - 1));
+                                CallListHelper.callList.get(CallManager.NUMBER_OF_CALLS - 1).mergeConference();
+                            }
+                        }, 15000);
+
+                    }
+
+
                 }
             }
         };
@@ -484,5 +516,30 @@ public class CallActivity extends AppCompatActivity {
                 WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
                 WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
         );
+    }
+    private void placeCall(String phoneNumber) {
+        @SuppressLint("ServiceCast")
+        TelecomManager telecomManager = (TelecomManager) getSystemService(Context.TELECOM_SERVICE);
+        Uri uri = Uri.fromParts("tel", phoneNumber, null);
+        Bundle extras = new Bundle();
+        extras.putBoolean(TelecomManager.EXTRA_START_CALL_WITH_SPEAKERPHONE, false);
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+            if (telecomManager.getDefaultDialerPackage().equals(getPackageName())) {
+                // Directly place the call using TelecomManager API
+                telecomManager.placeCall(uri, extras);
+            } else {
+                // If your app is not the default dialer, you cannot use the TelecomManager API directly.
+                // You'll need to request the CALL_PHONE permission and start the call using ACTION_CALL intent.
+                Uri phoneNumberUri = Uri.parse("tel:" + phoneNumber);
+                Intent callIntent = new Intent(Intent.ACTION_CALL, phoneNumberUri);
+                callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(callIntent);
+            }
+        } else {
+            Toast.makeText(this, "Please allow permission", Toast.LENGTH_SHORT).show();
+        }
+
+
     }
 }

@@ -14,10 +14,11 @@ import com.hiddenpirates.dialer.activities.CallActivity;
 import com.hiddenpirates.dialer.activities.MainActivity;
 import com.hiddenpirates.dialer.helpers.CallListHelper;
 import com.hiddenpirates.dialer.helpers.CallManager;
+import com.hiddenpirates.dialer.helpers.CounterSingleton;
 import com.hiddenpirates.dialer.helpers.NotificationHelper;
 
 public class CallService extends InCallService {
-
+    CounterSingleton counterSingleton = CounterSingleton.getInstance();
     int call_state;
 
     @SuppressLint({"SetTextI18n", "UseCompatTextViewDrawableApis"})
@@ -78,19 +79,21 @@ public class CallService extends InCallService {
 
         CallManager.HP_CALL_STATE = call_state;
 
-        if (call_state == Call.STATE_RINGING){
-
-            Intent intent = new Intent(this, CallActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
+        if (call_state == Call.STATE_RINGING && counterSingleton.getCounter()!=0 ){
+            counterSingleton.incrementCounter();
+            Toast.makeText(this,counterSingleton.getCounter(), Toast.LENGTH_SHORT).show();
+//            Intent intent = new Intent(this, CallActivity.class);
+//            intent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT | Intent.FLAG_ACTIVITY_NEW_TASK);
+//            startActivity(intent);
 
             Toast.makeText(this, "Incoming call from " + call.getDetails().getHandle().getSchemeSpecificPart(), Toast.LENGTH_SHORT).show();
         }
-        else if (call_state == Call.STATE_CONNECTING || call_state == Call.STATE_DIALING){
+        else if (call_state == Call.STATE_CONNECTING || call_state == Call.STATE_DIALING && counterSingleton.getCounter()!=0){
 
-            Intent intent = new Intent(this, CallActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
+            counterSingleton.incrementCounter();
+//            Intent intent = new Intent(this, CallActivity.class);
+//            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//            startActivity(intent);
 
             Toast.makeText(this, "Dialing to " + call.getDetails().getHandle().getSchemeSpecificPart(), Toast.LENGTH_SHORT).show();
         }
